@@ -35,8 +35,8 @@ venv.bak/
 *~
 .DS_Store
 
-# Streamlit
-.streamlit/
+# Streamlit cache (but keep config)
+.streamlit/secrets.toml
 
 # Jupyter
 .ipynb_checkpoints
