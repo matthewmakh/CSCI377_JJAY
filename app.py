@@ -113,6 +113,27 @@ def create_sample_network():
     for source, dest, distance, time, traffic in connections:
         graph.add_edge(source, dest, distance, time, traffic, bidirectional=True)
     
+    # Set initial demand based on location types
+    # Downtown/business areas have high demand
+    high_demand_areas = [
+        (40.7589, -73.9851, 1.0),  # Downtown Business District
+        (40.7527, -73.9772, 0.9),  # Main Train Station
+        (40.7570, -73.9900, 0.85), # Bus Terminal
+        (40.7630, -73.9840, 0.8),  # University Campus
+        (40.7660, -73.9760, 0.75), # College District
+        (40.7620, -73.9780, 0.7),  # Shopping Center
+    ]
+    
+    # Calculate demand for each node
+    for node in graph.nodes.values():
+        max_demand = 0.0
+        for lat, lon, density in high_demand_areas:
+            dist = graph._haversine_distance(node.lat, node.lon, lat, lon)
+            if dist < 2.0:  # within 2km
+                local_demand = density / (1 + dist**2)
+                max_demand = max(max_demand, local_demand)
+        node.demand = max_demand
+    
     return graph
 
 
@@ -745,13 +766,15 @@ def show_station_placement_page(graph):
     if optimize_button:
         optimizer = StationPlacementOptimizer(graph)
         
-        # Set demand
+        # Update demand based on user's slider values
         high_density_areas = [
             (40.7589, -73.9851, downtown_demand),  # Downtown
             (40.7527, -73.9772, transit_demand),    # Train station
             (40.7630, -73.9840, education_demand),  # University
         ]
         optimizer.set_demand_by_density(high_density_areas)
+        
+        st.info(f"💡 Recalculating demand scores with your settings: Downtown={downtown_demand:.1f}, Transit={transit_demand:.1f}, Education={education_demand:.1f}")
         
         with st.spinner("Optimizing station placement..."):
             if algorithm == "Greedy Coverage":
