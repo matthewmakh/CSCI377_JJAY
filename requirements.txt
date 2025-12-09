@@ -1,0 +1,20 @@
+# Bike-Sharing Station Planner - Dependencies
+
+# Required for interactive web dashboard
+streamlit>=1.28.0
+
+# Required for interactive map visualization
+folium>=0.14.0
+streamlit-folium>=0.15.0
+
+# For plotting and charts
+plotly>=5.18.0
+
+# For data manipulation (optional, for advanced features)
+pandas>=2.0.0
+
+# No other external dependencies needed!
+# The project uses Python standard library for:
+# - heapq (Dijkstra's algorithm)
+# - math (distance calculations)
+# - unittest (testing)
