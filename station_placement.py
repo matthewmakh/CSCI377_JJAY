@@ -1,7 +1,5 @@
-"""
-Station placement optimization module for bike-sharing system.
-Uses clustering, coverage analysis, and demand-based algorithms.
-"""
+# Station placement optimization for bike-sharing
+# Uses clustering and greedy algorithms
 
 from typing import List, Set, Tuple, Dict
 import math
@@ -9,29 +7,13 @@ from graph import CityGraph, Node
 
 
 class StationPlacementOptimizer:
-    """Optimizes bike station placement in a city network."""
     
     def __init__(self, graph: CityGraph):
-        """
-        Initialize the optimizer.
-        
-        Args:
-            graph: The city graph
-        """
         self.graph = graph
     
     def calculate_coverage(self, station_ids: List[str], 
                           max_distance: float = 0.5) -> float:
-        """
-        Calculate what percentage of nodes are covered by stations.
-        
-        Args:
-            station_ids: List of station node IDs
-            max_distance: Maximum walking distance in kilometers
-        
-        Returns:
-            Coverage percentage (0.0 to 1.0)
-        """
+        # Calculate percentage of nodes within walking distance of stations
         if not self.graph.nodes:
             return 0.0
         
@@ -49,18 +31,7 @@ class StationPlacementOptimizer:
     def greedy_station_placement(self, num_stations: int, 
                                  existing_stations: List[str] = None,
                                  max_coverage_distance: float = 0.5) -> List[str]:
-        """
-        Use greedy algorithm to select optimal station locations.
-        Selects stations that maximize coverage at each step.
-        
-        Args:
-            num_stations: Number of stations to place
-            existing_stations: List of existing station IDs
-            max_coverage_distance: Maximum walking distance for coverage
-        
-        Returns:
-            List of selected station node IDs
-        """
+        # Greedy algorithm - picks best station location at each step
         if existing_stations is None:
             existing_stations = []
         
@@ -75,7 +46,7 @@ class StationPlacementOptimizer:
             best_node = None
             best_coverage = -1
             
-            # Try each remaining node and see which gives best coverage
+            # try each node and pick the one with best coverage
             for candidate in remaining_nodes:
                 test_stations = selected_stations + [candidate]
                 coverage = self.calculate_coverage(test_stations, max_coverage_distance)
@@ -92,28 +63,19 @@ class StationPlacementOptimizer:
     
     def kmeans_clustering_placement(self, num_stations: int,
                                     max_iterations: int = 100) -> List[str]:
-        """
-        Use k-means clustering to place stations at cluster centroids.
-        
-        Args:
-            num_stations: Number of stations to place
-            max_iterations: Maximum iterations for k-means
-        
-        Returns:
-            List of selected station node IDs
-        """
+        # k-means clustering to place stations at cluster centers
         nodes = list(self.graph.nodes.values())
         
         if len(nodes) < num_stations:
             return [node.node_id for node in nodes]
         
-        # Initialize centroids randomly
+        # pick random starting centroids
         import random
         random.seed(42)
         centroids = random.sample(nodes, num_stations)
         
         for iteration in range(max_iterations):
-            # Assign each node to nearest centroid
+            # assign nodes to nearest centroid
             clusters = [[] for _ in range(num_stations)]
             
             for node in nodes:
@@ -128,21 +90,20 @@ class StationPlacementOptimizer:
                 
                 clusters[closest_cluster].append(node)
             
-            # Update centroids
+            # recalculate centroids
             new_centroids = []
             converged = True
             
             for i, cluster in enumerate(clusters):
                 if not cluster:
-                    # Keep old centroid if cluster is empty
-                    new_centroids.append(centroids[i])
+                    new_centroids.append(centroids[i])  # keep old if empty
                     continue
                 
-                # Calculate cluster center
+                # find cluster center
                 avg_lat = sum(node.lat for node in cluster) / len(cluster)
                 avg_lon = sum(node.lon for node in cluster) / len(cluster)
                 
-                # Find node closest to center
+                # get closest node to center
                 closest_node = min(cluster, 
                                   key=lambda n: math.sqrt(
                                       (n.lat - avg_lat)**2 + (n.lon - avg_lon)**2))

@@ -1,7 +1,5 @@
-"""
-Interactive Bike-Sharing Station Planner Dashboard
-A web-based interactive application with maps and visualizations
-"""
+# Bike-Sharing Station Planner Dashboard
+# Interactive web app with maps and visualizations
 
 import streamlit as st
 import folium
@@ -14,7 +12,7 @@ from station_placement import StationPlacementOptimizer
 import random
 import pandas as pd
 
-# Page configuration
+# page setup
 st.set_page_config(
     page_title="Bike-Sharing Planner",
     page_icon="🚴",
@@ -54,10 +52,10 @@ st.markdown("""
 
 @st.cache_data
 def create_sample_network():
-    """Create and cache the sample city network."""
+    # creates the sample city network
     graph = CityGraph()
     
-    # Define locations with realistic NYC area coordinates
+    # NYC area coordinates
     locations = [
         ("RES_01", "Residential Area North", 40.7700, -73.9900, False, 0),
         ("RES_02", "Residential Area East", 40.7650, -73.9700, False, 0),
@@ -374,17 +372,17 @@ def show_overview_page(graph):
     st.header("🏠 Welcome to the Bike-Sharing Station Planner")
     
     st.info("""📖 **What is this dashboard?** 
-    A complete tool for planning and optimizing bike-sharing networks. This page shows your entire network with all locations and possible routes.
+    A tool for planning bike-sharing networks using graph algorithms. The network is represented as a graph (nodes + edges) - check out `graph.py` to see how we built it!
     """)
     
     st.markdown("""
     ### What You Can Do Here:
-    - 🗺️ **Plan optimal routes** - Find the best path between any two locations considering distance, time, and traffic
-    - 📍 **Optimize station placement** - Use smart algorithms to decide where to put bike stations for maximum coverage
-    - 📊 **Analyze network performance** - Get insights into connectivity, traffic patterns, and demand
-    - 🔍 **Visualize everything** - See your data on interactive maps and charts
+    - 🗺️ **Plan optimal routes** - Uses Dijkstra's and A* algorithms with weighted edge costs
+    - 📍 **Optimize station placement** - Implements Greedy, K-Means, and Demand-Based algorithms
+    - 📊 **Analyze network performance** - Uses BFS traversal and coverage calculations
+    - 🔍 **Visualize everything** - Interactive maps showing the graph structure
     
-    💡 **New to this?** Start by exploring the map below, then try the Route Planning page!
+    💡 **This is an algorithms project!** The focus is on graph traversal, shortest path, and optimization algorithms. Code is on GitHub!
     """)
     
     # Network map
@@ -450,22 +448,30 @@ def show_route_planning_page(graph):
     st.header("🗺️ Route Planning")
     
     st.info("""📖 **What is this?** 
-    This page helps you find the best route between any two locations in the network. 
-    You can choose different algorithms and adjust how important distance, time, and traffic are to you.
+    This page runs Dijkstra's or A* algorithm to find the shortest path. Both use a priority queue but A* adds a heuristic to be faster.
+    You adjust the weights that go into the cost formula to change what "shortest" means.
     """)
     
-    with st.expander("ℹ️ Understanding Route Planning"):
+    with st.expander("ℹ️ How the Algorithms Work"):
         st.markdown("""
-        **Why Route Planning Matters:**
-        - Helps users find the fastest or shortest path to their destination
-        - Considers real-world factors like traffic congestion and road conditions
-        - Different algorithms offer different trade-offs between speed and accuracy
+        **Dijkstra's Algorithm:**
+        - Checks all possible paths by always exploring the cheapest option first
+        - Uses a priority queue to keep track of which node to visit next
+        - Guaranteed to find the absolute best route but explores more nodes
+        - Check out `shortest_path.py` to see the implementation with the priority queue and cost tracking
         
-        **How It Works:**
-        1. Select your start and end locations
-        2. Choose which factors matter most (distance, time, traffic)
-        3. Pick an algorithm (or compare both!)
-        4. See your optimal route on the map with turn-by-turn directions
+        **A* Algorithm:**
+        - Works like Dijkstra but adds a "smart guess" about how far you still need to go
+        - Uses straight-line distance as a heuristic to guide the search toward your destination
+        - Usually faster because it doesn't waste time exploring paths going the wrong direction
+        - The heuristic function estimates remaining distance assuming you bike at 15 km/h
+        
+        **What the Weight Sliders Actually Do:**
+        - **Distance Weight:** How much you care about physical distance (km)
+        - **Time Weight:** How much you care about how long it takes (minutes)
+        - **Traffic Weight:** How much you want to avoid congested roads
+        - The algorithm calculates: `cost = (distance_weight × distance) + (time_weight × time) + (traffic_weight × time × traffic)`
+        - Try setting distance to 1.0 and everything else to 0.0 to get the shortest physical route!
         """)
     
     # Route selection
@@ -500,33 +506,33 @@ def show_route_planning_page(graph):
         algorithm = st.selectbox(
             "Algorithm",
             ["Dijkstra", "A*", "Both"],
-            help="Dijkstra: Explores all possibilities (thorough). A*: Uses smart heuristics (faster). Both: Compare them side-by-side!"
+            help="Dijkstra uses a priority queue to explore all paths. A* adds a heuristic (straight-line distance) to be faster."
         )
-        st.caption("🔍 **Dijkstra** is guaranteed optimal but explores more. **A*** is faster using geographic hints.")
+        st.caption("🔍 **Dijkstra** checks everything systematically. **A*** uses geography to guide its search.")
     
     with col2:
         dist_weight = st.slider(
             "Distance Weight", 
             0.0, 1.0, 0.4, 0.1,
-            help="How much does physical distance matter? Higher = prioritize shorter routes."
+            help="Multiplier for distance in km. The edge cost formula uses this to calculate total cost."
         )
-        st.caption("📏 Prefer shortest physical distance")
+        st.caption("📏 Higher = care more about distance")
     
     with col3:
         time_weight = st.slider(
             "Time Weight", 
             0.0, 1.0, 0.4, 0.1,
-            help="How much does travel time matter? Higher = prioritize faster routes."
+            help="Multiplier for time in minutes. Gets combined with distance and traffic weights."
         )
-        st.caption("⏱️ Prefer quickest travel time")
+        st.caption("⏱️ Higher = care more about speed")
     
     with col4:
         traffic_weight = st.slider(
             "Traffic Weight", 
             0.0, 1.0, 0.2, 0.1,
-            help="How much do you want to avoid traffic? Higher = avoid congested routes."
+            help="Multiplier for traffic congestion. Traffic factor ranges from 1.0 (clear) to 2.0 (heavy)."
         )
-        st.caption("🚦 Avoid heavy traffic areas")
+        st.caption("🚦 Higher = avoid congestion more")
     
     # Find route button
     col1, col2 = st.columns([1, 4])
@@ -639,26 +645,35 @@ def show_station_placement_page(graph):
     st.header("📍 Station Placement Optimization")
     
     st.info("""📖 **What is this?** 
-    This page uses smart algorithms to decide where to place bike stations for maximum effectiveness. 
-    The goal is to ensure people can easily access stations while considering demand and coverage.
+    This page runs three different optimization algorithms to figure out the best station locations. 
+    Each algorithm has a different approach - Greedy picks best coverage incrementally, K-Means clusters locations, and Demand-Based just sorts by popularity.
     """)
     
-    with st.expander("ℹ️ Understanding Station Placement"):
+    with st.expander("ℹ️ How the Placement Algorithms Work"):
         st.markdown("""
-        **Why This Matters:**
-        - Poor station placement = wasted resources and unhappy users
-        - Good placement = high usage, better coverage, satisfied customers
-        - Optimization algorithms help find the best locations mathematically
+        **Greedy Coverage Algorithm** (`station_placement.py`):
+        - Picks one station at a time, always choosing the spot that covers the most new areas
+        - At each step, it tests every remaining location and calculates coverage percentage
+        - Selects whichever location gives the biggest increase in coverage
+        - Simple and fast, usually gives pretty good results
         
-        **Three Different Approaches:**
-        - **Greedy Coverage**: Spreads stations out to maximize geographic coverage
-        - **K-Means Clustering**: Groups locations and places stations at cluster centers
-        - **Demand-Based**: Prioritizes high-demand areas (downtown, transit hubs, etc.)
+        **K-Means Clustering Algorithm** (`station_placement.py`):
+        - Groups all locations into clusters based on how close they are to each other
+        - Calculates the center point of each cluster
+        - Places a station at the location closest to each center
+        - Good for spreading stations evenly across the city
+        - Uses the Euclidean distance formula to group locations
         
-        **Key Metrics to Watch:**
-        - **Coverage %**: How much of the network is within reach of a station
-        - **Station Distance**: How far apart stations are (not too close, not too far)
-        - **Connections**: Well-connected stations serve more routes
+        **Demand-Based Algorithm** (`station_placement.py`):
+        - Ranks all locations by their demand score (how busy they are)
+        - Simply picks the top N highest-demand locations
+        - Demand decreases with distance from high-traffic areas using inverse square law
+        - Best when you want stations where people actually are, not just good coverage
+        
+        **What Gets Measured:**
+        - **Coverage %**: What percentage of the city is within walking distance (default 0.5km)
+        - **Station Distance**: Average spacing between stations (uses Haversine formula in `graph.py`)
+        - **Connections**: How many routes each station can serve
         """)
     
     # Settings
@@ -676,9 +691,9 @@ def show_station_placement_page(graph):
         algorithm = st.selectbox(
             "Placement Algorithm",
             ["Greedy Coverage", "K-Means Clustering", "Demand-Based"],
-            help="Each algorithm optimizes differently. Try them all to compare!"
+            help="Greedy picks best coverage each step. K-Means groups locations. Demand-Based sorts by usage."
         )
-        st.caption("🎯 Different optimization strategies")
+        st.caption("🎯 Three different approaches to optimization")
     
     with col3:
         coverage_radius = st.slider(
@@ -690,8 +705,8 @@ def show_station_placement_page(graph):
     
     # Demand settings
     st.subheader("🔥 High-Demand Areas")
-    st.markdown("""Adjust demand levels for different area types. Higher demand = more likely to place a station there.
-    💡 **Real-world insight:** Business districts see peak demand during work hours, transit hubs during rush hour, educational areas during school terms.""")
+    st.markdown("""These values affect the demand score for each location. The algorithm calculates demand based on distance from these hot spots.
+    💡 **How it works:** Demand decreases with distance using `demand = density / (1 + distance²)` - this is called inverse square law!""")
     
     col1, col2, col3 = st.columns(3)
     
